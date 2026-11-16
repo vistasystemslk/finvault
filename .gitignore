@@ -1,0 +1,29 @@
+# Runtime data
+FinVault.db
+FinVault.db-*
+backups/
+exports/
+finvault.log
+finvault.lock
+finvault.port
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Packaging
+build/
+dist/
+*.spec
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# Statement PDFs and extracted text (private data)
+statements/
+

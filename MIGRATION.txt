@@ -1,0 +1,68 @@
+FinVault - moving to another PC
+================================
+
+WHAT IS IN THIS FOLDER
+
+  dist\FinVault.exe    the whole app, one file
+  dist\FinVault.db     your live data: 4 cards, 27 statements, 415 transactions,
+                       13 accounts, loans, assets, tax filings, API key
+  backups\             database snapshots taken before imports and on a schedule
+  statements\          the statement PDFs (private) plus parsed JSON
+  finvault\, web\, tools\, tests\, assets\, launcher.py, build.ps1
+                       source code - only needed if you want to change the app
+
+STEP 1 - COPY
+  Unzip somewhere local first, for example C:\FinVault
+  Do not unzip into a Google Drive folder while Drive is still uploading or
+  downloading. Let the sync settle, or copy the unzipped folder in and wait
+  until Drive says everything is synced.
+
+STEP 2 - RUN
+  Double-click dist\FinVault.exe
+  Your browser opens http://127.0.0.1:8787/ and your data is already there,
+  because dist\FinVault.db travels with the executable.
+
+STEP 3 - KEEP IT RUNNING FOR HERMES (optional)
+  Hermes can only call the API while the app is running. To start it at login,
+  put a shortcut to dist\FinVault.exe in:
+
+    %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+
+  Add  --no-browser --port 8787  to the shortcut target if you do not want a
+  browser tab every time you sign in.
+
+STEP 4 - API DETAILS FOR HERMES
+  Base URL   http://127.0.0.1:8787/api/v1
+  Key        Settings -> API access  (the key lives in the database, so it
+             moved with it and does not need to be re-issued)
+  Health     GET /api/health   (no key required)
+
+  Importing a statement is designed to be retried safely:
+    POST /api/v1/import/card-statement
+      dry_run: true       validate and preview, write nothing
+      strict: true        fail if opening + rows does not equal closing
+      skip_duplicates     default true
+      replace: true       re-import a statement already on file
+
+STEP 5 - IF YOU WANT TO CHANGE THE CODE ON THE NEW PC
+  Install Python 3.12 from python.org and tick "Add python.exe to PATH", then:
+
+    cd <this folder>
+    python -m pip install pypdf pyinstaller
+    python tests\smoke_api.py           # regression test, should end "All smoke tests passed."
+    python -m finvault --no-browser     # run from source on port 8787
+    .\build.ps1                         # rebuild dist\FinVault.exe
+
+  Note: running from source uses FinVault.db in the *project root*, while the
+  EXE uses dist\FinVault.db. Keep one database as the real one - see below.
+
+WARNINGS
+
+  * Never run the app on two PCs at the same time against the same Drive
+    folder. SQLite plus two writers plus cloud sync equals corruption.
+  * Close the app before moving, renaming or copying the folder.
+  * Wait for Drive to finish syncing before opening the app on the new PC.
+  * If Drive ever produces a "conflict copy" of FinVault.db, do not merge it:
+    restore the newest good file from backups\ instead.
+  * The API key is stored inside FinVault.db, so anyone holding that file can
+    call the API. Keep the folder private.

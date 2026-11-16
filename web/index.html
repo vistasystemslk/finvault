@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>FinVault · Personal Finance</title>
+  <meta name="description" content="FinVault is a private, offline personal finance command center for credit cards, bank accounts, loans, assets, income and Sri Lankan taxes.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script>
+    try {
+      var storedTheme = localStorage.getItem('fv_theme');
+      if (storedTheme) document.documentElement.dataset.theme = storedTheme;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <div class="app-shell" id="appShell">
+    <div class="scrim" data-action="closeSidebar"></div>
+
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#/dashboard" aria-label="FinVault dashboard">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="img">
+            <defs>
+              <linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="55%" stop-color="#6366f1"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#brandGradient)"/>
+            <path d="M19 17h27v7H26.5v7H42v7H26.5v11H19z" fill="#fff"/>
+            <circle cx="47" cy="47" r="4" fill="#fff" opacity=".85"/>
+          </svg>
+        </span>
+        <span class="brand-copy">
+          <strong>FinVault</strong>
+          <span>Personal finance OS</span>
+        </span>
+      </a>
+
+      <nav class="nav" id="nav" aria-label="Main navigation"></nav>
+
+      <div class="sidebar-foot">
+        <div class="local-badge">
+          <span class="dot"></span>
+          <div>
+            <strong>Offline &amp; private</strong>
+            <small id="sideDbLabel">Data stays in this folder</small>
+          </div>
+        </div>
+        <div class="sidebar-meta">
+          <span id="sideVersion">v1.0.0</span>
+          <a href="#/api" class="text-link">API</a>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-menu" data-action="toggleSidebar" aria-label="Open menu" title="Menu">
+            <span data-icon="menu"></span>
+          </button>
+          <div class="workspace">
+            <span class="workspace-label">Workspace</span>
+            <div class="workspace-row">
+              <span class="status-pulse" title="FinVault is running"></span>
+              <span id="workspaceName">My finances</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="search-trigger" data-action="openSearch" title="Search (Ctrl+K)">
+            <span data-icon="search"></span>
+            <span class="search-placeholder">Search transactions, cards, people…</span>
+            <kbd>Ctrl K</kbd>
+          </button>
+          <label class="person-picker" title="Filter by person">
+            <span data-icon="users"></span>
+            <select id="personFilter" aria-label="Filter by person"></select>
+          </label>
+          <button class="btn btn-primary quick-add-btn" data-action="quickAdd">
+            <span data-icon="plus"></span>
+            <span>Add</span>
+          </button>
+          <button class="icon-btn" data-action="toggleTheme" id="themeToggle" aria-label="Toggle theme" title="Toggle light / dark">
+            <span data-icon="moon"></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="content" id="view">
+        <div class="loading-screen">
+          <div class="loader-ring"></div>
+          <p>Opening FinVault…</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot" class="toast-root" aria-live="polite"></div>
+
+  <script>
+    window.FINVAULT_CONFIG = __FINVAULT_CONFIG__;
+  </script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

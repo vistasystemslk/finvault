@@ -1,0 +1,19 @@
+* text=auto
+
+# Windows scripts keep CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Source and docs stay LF so edits on different machines stay clean
+*.py text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.ico binary
+*.png binary
+*.pdf binary
+*.db binary
