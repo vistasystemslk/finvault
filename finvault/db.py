@@ -10,7 +10,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterator
 
-from .config import APP_VERSION, BASE_CURRENCY, DB_PATH, BACKUP_DIR
+from .config import (
+    APP_VERSION, BASE_CURRENCY, DB_PATH, BACKUP_DIR, IDLE_QUIT_DEFAULT_MINUTES,
+)
 
 SCHEMA_VERSION = 1
 
@@ -526,6 +528,7 @@ def _seed(conn: sqlite3.Connection) -> None:
             "onboarded": "0",
             "app_version": APP_VERSION,
             "fiscal_year_start_month": "4",
+            "idle_quit_minutes": str(IDLE_QUIT_DEFAULT_MINUTES),
         }
         for key, value in settings.items():
             set_setting(conn, key, value)

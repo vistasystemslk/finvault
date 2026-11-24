@@ -278,6 +278,7 @@ export async function pageSettings() {
         <div class="field"><label>Base currency</label><select class="select" id="setBaseCurrency">${options(currencies, settings.base_currency || "LKR")}</select></div>
         <div class="field"><label>Theme</label><select class="select" id="setTheme">${options([{ id: "dark", name: "Dark" }, { id: "light", name: "Light" }], settings.theme || "dark")}</select></div>
         <div class="field"><label>Auto-backup interval (hours)</label><input class="input" type="number" id="setBackupHours" min="1" max="720" value="${attr(settings.backup_interval_hours || "12")}"></div>
+        <div class="field"><label>Quit when idle (minutes)</label><input class="input" type="number" id="setIdleQuit" min="0" max="1440" step="1" value="${attr(settings.idle_quit_minutes ?? "30")}"><div class="hint">0 = never. The app quits after this long with no open tab or API call.</div></div>
         <div class="field"><label>Tax year starts</label><select class="select" id="setFiscalMonth">${options([{ id: "1", name: "January" }, { id: "4", name: "April (Sri Lanka)" }, { id: "7", name: "July" }, { id: "10", name: "October" }], settings.fiscal_year_start_month || "4")}</select></div>
       </div>
       <div style="margin-top:14px"><button class="btn btn-primary" data-action="saveGeneral">${icon("check")} Save settings</button></div>

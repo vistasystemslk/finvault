@@ -1484,6 +1484,7 @@ export async function saveGeneral() {
     base_currency: document.getElementById("setBaseCurrency")?.value || baseCurrency(),
     theme: document.getElementById("setTheme")?.value || state.theme,
     backup_interval_hours: document.getElementById("setBackupHours")?.value || "12",
+    idle_quit_minutes: document.getElementById("setIdleQuit")?.value || "30",
     fiscal_year_start_month: document.getElementById("setFiscalMonth")?.value || "4",
   };
   await api("/settings", { method: "PUT", body: { settings: payload } });

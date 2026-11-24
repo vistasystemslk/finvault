@@ -32,6 +32,7 @@ python -m PyInstaller `
     --name FinVault `
     --icon "assets\FinVault.ico" `
     --add-data "web;web" `
+    --add-data "assets\FinVault.ico;assets" `
     --collect-submodules finvault `
     launcher.py
 

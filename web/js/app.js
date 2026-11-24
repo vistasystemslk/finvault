@@ -382,12 +382,32 @@ document.addEventListener("click", (event) => {
 });
 
 /* -------------------------------------------------------------------------- */
+/* Heartbeat                                                                  */
+/* -------------------------------------------------------------------------- */
+/* The local server can quit itself after a period without activity. While a
+   FinVault tab is open we ping /api/health once a minute so idle time is only
+   counted after every tab has been closed. */
+function startHeartbeat() {
+  const beat = () => {
+    fetch("/api/health", { cache: "no-store" }).catch(() => { /* server is stopped */ });
+  };
+  beat();
+  const timer = setInterval(beat, 60000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") beat();
+  });
+  window.addEventListener("pagehide", () => clearInterval(timer));
+}
+
+/* -------------------------------------------------------------------------- */
 /* Boot                                                                       */
 /* -------------------------------------------------------------------------- */
 window.addEventListener("hashchange", () => render({ soft: false }));
 document.addEventListener("fv:refresh", () => reloadAll({ soft: true }));
 
 async function boot() {
+  startHeartbeat();
+  hydrateIcons(document);
   applyTheme(state.theme, false);
   try {
     await loadBootstrap();

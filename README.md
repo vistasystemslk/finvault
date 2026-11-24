@@ -17,8 +17,25 @@ There is no cloud account, no telemetry, and no internet dependency.
 2. Double-click it. Your browser opens `http://127.0.0.1:8787/`.
 3. That folder now contains `FinVault.db` (your data), `backups/`, `exports/` and `finvault.log`.
 
-To stop FinVault, close the browser tab and use **Settings → Quit app**, or run
-`FinVault.exe --stop`. Only one copy can run against the same database at a time.
+### Stopping FinVault
+
+Closing the browser tab does **not** stop FinVault — the small local server keeps running
+so you can reopen the tab, call the REST API, or reopen the UI from the tray icon. To
+actually quit:
+
+- click the power button in the top bar;
+- **Settings → Quit app**;
+- right-click the FinVault tray icon and choose **Quit FinVault**;
+- or run `FinVault.exe --stop`.
+
+Each route shuts the server down cleanly: the database is closed, the port is released and
+the tray icon disappears. `Ctrl+C` does the same when running from source. Only one copy
+can run against the same database at a time.
+
+**Idle auto-quit** lives in **Settings → General → Quit when idle (minutes)**. While at
+least one FinVault tab is open the UI pings the server once a minute, so idle time only
+builds up after every tab has been closed. The default is 30 minutes; set `0` to disable.
+Via the API: `PUT /api/v1/settings` with `{"settings": {"idle_quit_minutes": 10}}`.
 
 ### Option B — From source
 
@@ -33,6 +50,7 @@ Useful flags:
 
 ```powershell
 python -m finvault --no-browser        # start without opening a browser
+python -m finvault --no-tray           # skip the Windows tray icon
 python -m finvault --port 9000         # use another port
 python -m finvault --stop              # stop the running instance
 python -m finvault --version
@@ -324,7 +342,9 @@ python tests\smoke_api.py
 
 | Symptom | Fix |
 | --- | --- |
-| Browser shows “can’t connect” | The app may have exited. Start `FinVault.exe` again. |
+| Browser shows “can’t connect” | The app may have exited (idle auto-quit). Start `FinVault.exe` again. |
+| FinVault keeps running after I close the tab | That is normal — it is a local server. Quit with the top-bar power button, Settings → Quit app, the tray menu, or `FinVault.exe --stop`. Lower *Quit when idle* to make it close itself sooner. |
+| No tray icon | Tray icons are Windows-only. Check you did not start with `--no-tray` or set `FINVAULT_NO_TRAY=1`. If Explorer restarted, the icon re-adds itself. |
 | “Another instance is already running” | Use the open window, or run `FinVault.exe --stop` first. |
 | Port 8787 is busy | Start with `FinVault.exe --port 8788` (or set the flag in a shortcut). |
 | Data looks stale after restoring a backup | Refresh the browser tab. |

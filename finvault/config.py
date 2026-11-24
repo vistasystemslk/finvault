@@ -26,6 +26,11 @@ LOG_PATH = APP_DIR / "finvault.log"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8787
 
+# Quit the local server after this many minutes with no browser heartbeat or API call.
+# 0 disables the automatic shutdown. Users can change it in Settings.
+IDLE_QUIT_DEFAULT_MINUTES = 30
+IDLE_CHECK_SECONDS = 15
+
 BASE_CURRENCY = "LKR"
 
 CURRENCY_SYMBOLS = {

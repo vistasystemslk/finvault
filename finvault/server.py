@@ -8,6 +8,7 @@ import os
 import socket
 import sys
 import threading
+import time
 import urllib.parse
 import urllib.request
 import webbrowser
@@ -18,8 +19,8 @@ from typing import Any
 from . import api
 from .api_base import ApiError, Ctx, Raw
 from .config import (
-    APP_DIR, APP_NAME, APP_VERSION, DB_PATH, DEFAULT_HOST, DEFAULT_PORT, LOG_PATH,
-    WEB_DIR, ensure_dirs,
+    APP_DIR, APP_NAME, APP_VERSION, DB_PATH, DEFAULT_HOST, DEFAULT_PORT,
+    IDLE_CHECK_SECONDS, IDLE_QUIT_DEFAULT_MINUTES, LOG_PATH, WEB_DIR, ensure_dirs,
 )
 from .db import database, get_setting, init_db, integrity_check, maybe_auto_backup
 
@@ -149,6 +150,7 @@ class FinVaultHandler(BaseHTTPRequestHandler):
         return bool(supplied) and hmac.compare_digest(supplied, self.api_key)
 
     def _handle(self, method: str) -> None:
+        touch_activity()
         parsed = urllib.parse.urlsplit(self.path)
         path = urllib.parse.unquote(parsed.path)
         query = {key: values[0] for key, values in urllib.parse.parse_qs(parsed.query).items()}
@@ -308,7 +310,90 @@ def _existing_instance(port: int) -> bool:
         return False
 
 
-def run(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, open_browser: bool = True) -> int:
+# ---------------------------------------------------------------------------
+# Idle auto-quit
+# ---------------------------------------------------------------------------
+
+_activity_lock = threading.Lock()
+_last_activity = time.monotonic()
+
+
+def touch_activity() -> None:
+    """Record that the UI or an API client is still using the app."""
+    global _last_activity
+    with _activity_lock:
+        _last_activity = time.monotonic()
+
+
+def seconds_since_activity() -> float:
+    with _activity_lock:
+        return time.monotonic() - _last_activity
+
+
+def idle_quit_minutes() -> int:
+    """Read the current setting; 0 means the feature is off."""
+    try:
+        with database(DB_PATH) as conn:
+            raw = get_setting(conn, "idle_quit_minutes", str(IDLE_QUIT_DEFAULT_MINUTES))
+    except Exception:  # noqa: BLE001 - a locked/syncing database must not crash the monitor
+        return IDLE_QUIT_DEFAULT_MINUTES
+    try:
+        return max(0, min(int(str(raw).strip()), 24 * 60))
+    except (TypeError, ValueError):
+        return 0
+
+
+class IdleMonitor:
+    """Shuts the server down after a period without UI heartbeats or API calls."""
+
+    def __init__(self, server: FinVaultServer) -> None:
+        self._server = server
+        self._stop = threading.Event()
+        self._thread = threading.Thread(
+            target=self._run, name="finvault-idle", daemon=True
+        )
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread.is_alive():
+            self._thread.join(2.0)
+
+    def _run(self) -> None:
+        while not self._stop.wait(IDLE_CHECK_SECONDS):
+            minutes = idle_quit_minutes()
+            if minutes <= 0:
+                continue
+            idle = seconds_since_activity()
+            if idle < minutes * 60:
+                continue
+            log.info(
+                "No activity for %.1f minutes (idle limit %s); shutting down.",
+                idle / 60, minutes,
+            )
+            try:
+                self._server.shutdown()
+            except Exception:  # noqa: BLE001
+                log.exception("Idle shutdown failed")
+            return
+
+
+def _start_tray(url: str, server: FinVaultServer, enabled: bool):
+    if not enabled or os.name != "nt" or os.environ.get("FINVAULT_NO_TRAY"):
+        return None
+    from . import tray
+
+    return tray.start(
+        url=url,
+        on_open=lambda: _open_browser(url),
+        on_quit=server.shutdown,
+    )
+
+
+def run(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
+        open_browser: bool = True, tray: bool = True) -> int:
     setup_logging()
     ensure_dirs()
 
@@ -361,11 +446,18 @@ def run(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, open_browser: bool =
         log.info("Database: %s", DB_PATH)
         if open_browser:
             threading.Timer(0.5, _open_browser, args=(url,)).start()
+        touch_activity()
+        idle_monitor = IdleMonitor(server)
+        idle_monitor.start()
+        tray_icon = _start_tray(url, server, enabled=tray)
         try:
             server.serve_forever(poll_interval=0.4)
         except KeyboardInterrupt:
             pass
         finally:
+            idle_monitor.stop()
+            if tray_icon:
+                tray_icon.stop()
             server.server_close()
     except Exception:
         log.exception("Fatal startup error")

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any, Callable
 
-from .config import APP_NAME, APP_TAGLINE, APP_VERSION
+from .config import APP_NAME, APP_TAGLINE, APP_VERSION, IDLE_QUIT_DEFAULT_MINUTES
 from .db import get_setting, now_iso, q, q1, scalar, set_setting
 
 ROUTES: list[tuple[str, re.Pattern, Callable]] = []
@@ -235,6 +235,9 @@ def bootstrap(ctx: Ctx):
         "backup_interval_hours": get_setting(ctx.conn, "backup_interval_hours", "12"),
         "default_person_id": get_setting(ctx.conn, "default_person_id", ""),
         "fiscal_year_start_month": get_setting(ctx.conn, "fiscal_year_start_month", "4"),
+        "idle_quit_minutes": get_setting(
+            ctx.conn, "idle_quit_minutes", str(IDLE_QUIT_DEFAULT_MINUTES)
+        ),
         "api_key": get_setting(ctx.conn, "api_key", ""),
     }
     counts = {
@@ -266,16 +269,31 @@ def get_settings(ctx: Ctx):
 @route("PUT", "/api/v1/settings")
 def put_settings(ctx: Ctx):
     allowed = {"base_currency", "theme", "backup_interval_hours", "onboarded",
-               "fiscal_year_start_month", "default_person_id"}
+               "fiscal_year_start_month", "default_person_id", "idle_quit_minutes"}
     body = body_dict(ctx.body)
     payload = body.get("settings", body)
     if not isinstance(payload, dict):
         raise ApiError("settings must be an object", field="settings")
     changed = {}
     for key, value in payload.items():
-        if key in allowed:
-            set_setting(ctx.conn, key, str(value))
-            changed[key] = str(value)
+        if key not in allowed:
+            continue
+        if key == "idle_quit_minutes":
+            try:
+                minutes = int(str(value).strip())
+            except (TypeError, ValueError):
+                raise ApiError(
+                    "idle_quit_minutes must be a whole number of minutes",
+                    field=key,
+                )
+            if minutes < 0 or minutes > 1440:
+                raise ApiError(
+                    "idle_quit_minutes must be between 0 and 1440 minutes",
+                    field=key,
+                )
+            value = minutes
+        set_setting(ctx.conn, key, str(value))
+        changed[key] = str(value)
     return {"updated": changed}
 
 

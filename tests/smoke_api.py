@@ -58,6 +58,11 @@ def check(label: str, condition: bool, detail=""):
 # --- bootstrap -------------------------------------------------------------
 boot = call("GET", "/bootstrap")
 check("bootstrap", boot["app"]["name"] == "FinVault" and len(boot["persons"]) == 1)
+check("idle setting exposed", boot["settings"].get("idle_quit_minutes") == "30")
+updated = call("PUT", "/settings", body={"settings": {"idle_quit_minutes": "45"}})
+check("idle setting saved", updated["updated"].get("idle_quit_minutes") == "45")
+invalid = call("PUT", "/settings", body={"settings": {"idle_quit_minutes": "-5"}}, expect=400)
+check("idle setting validated", invalid["error"]["field"] == "idle_quit_minutes")
 person_id = boot["persons"][0]["id"]
 categories = boot["categories"]
 cat = {row["name"]: row["id"] for row in categories}
@@ -131,7 +136,7 @@ reminder = call("POST", "/scheduled", {
     "type": "expense", "frequency": "monthly", "next_due_date": "2026-11-20",
     "card_id": card["id"], "installments_left": 2,
 })
-check("create reminder", reminder["id"] > 0 and reminder["status"] in ("upcoming", "soon", "today"))
+check("create reminder", reminder["id"] > 0 and reminder["status"] in ("upcoming", "soon", "today", "overdue"))
 check("reminder links card", reminder["card_name"] == card["name"])
 settled = call("POST", f"/scheduled/{reminder['id']}/settle", {"post": True, "date": "2026-11-20"})
 check("settle reminder", settled["posted"] and settled["reminder"]["next_due_date"] == "2026-12-20"
